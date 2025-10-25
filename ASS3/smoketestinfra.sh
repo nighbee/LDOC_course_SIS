@@ -9,6 +9,6 @@ node --version && echo "node: pass" || echo "node: fail"
 npm --version && echo "npm: pass" || echo "npm: fail"
 sudo ufw status | head -5 && echo "ufw: pass" || echo "ufw: fail"
 
-cd /home/almaz/ESG/backend || { echo "backend folder not found"; exit 1; }
-go mod tidy -v && echo "go mod: pass" || echo "go mod: fail"
+#cd /home/almaz/ESG/backend || { echo "backend folder not found"; exit 1; }
+#go mod install -v && echo "go mod: pass" || echo "go mod: fail"
 cd - > /dev/null
