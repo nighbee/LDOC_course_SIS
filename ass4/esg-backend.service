@@ -1,0 +1,29 @@
+[Unit]
+Description=ESG Backend Container
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+EnvironmentFile=/etc/esg/backend.env
+# Pull latest image before start (optional)
+ExecStartPre=/usr/bin/docker pull docker.io/<dockerhub_username>/esg-backend:latest
+# Remove any previous container with same name
+ExecStartPre=/usr/bin/docker rm -f esg-backend || true
+
+# Start the container
+ExecStart=/usr/bin/docker run --name esg-backend \
+  --env-file /etc/esg/backend.env \
+  -p 8080:8080 \
+  --restart=no \
+  docker.io/<dockerhub_username>/esg-backend:latest
+
+# Stop and cleanup
+ExecStop=/usr/bin/docker stop esg-backend
+ExecStopPost=/usr/bin/docker rm -f esg-backend
+
+Restart=always
+RestartSec=5
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
