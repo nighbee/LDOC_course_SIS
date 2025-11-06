@@ -1,0 +1,95 @@
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: esg-backend
+    restart: unless-stopped
+    environment:
+      # Supabase Database configuration
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Compose supplies both variants; backend reads DB_SSLMODE
+      DB_SSLMODE: ${DB_SSL_MODE:-require}
+      DB_SSL_MODE: ${DB_SSL_MODE:-require}
+      # Supabase API (pass-through, optional for future use)
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # JWT configuration
+      JWT_SECRET: ${WMfWqTlnzAySA1r+gk9Kc7W8HQSJKThyxEYGHIfYI0NCUjB3c4jU8vbchHxH9E1UDHo92iLsNeF09AVcJsTTEg==}
+      
+      # CORS configuration
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:5173}
+      
+      # Application configuration
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Prefer SERVER_PORT if provided, fallback to 8080
+      PORT: ${SERVER_PORT:-8080}
+    ports:
+      - "8080:8080"
+    networks:
+      - esg-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./backend/app.yaml:/app/app.yaml:ro
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080/api}
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: esg-frontend
+    restart: unless-stopped
+    environment:
+      # API configuration
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api}
+      
+      # Application configuration
+      NODE_ENV: ${NODE_ENV:-production}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # UI configuration
+      VITE_THEME: ${VITE_THEME:-light}
+      VITE_PRIMARY_COLOR: ${VITE_PRIMARY_COLOR:-#1cad68}
+      
+      # Feature flags
+      VITE_ENABLE_NOTIFICATIONS: ${VITE_ENABLE_NOTIFICATIONS:-true}
+      VITE_DEBUG_MODE: ${VITE_DEBUG_MODE:-false}
+    ports:
+      - "3000:80"
+    networks:
+      - esg-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - ./frontend/app.yaml:/etc/nginx/conf.d/app.yaml:ro
+
+# Networks
+networks:
+  esg-network:
+    driver: bridge
+    name: esg-network
+
+# No persistent volumes needed since using Supabase
