@@ -1,0 +1,37 @@
+- name: Login to Docker Hub
+  docker_login:
+    username: "{{ docker_hub_user }}"
+    password: "{{ docker_hub_password }}"
+
+- name: Pull published images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+  loop:
+    - "{{ docker_hub_user }}/esg-backend:v1.0"
+    - "{{ docker_hub_user }}/esg-frontend:v1.0"
+
+- name: Copy systemd units
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: 'esg-backend.service', dest: '/etc/systemd/system/' }
+    - { src: 'esg-frontend.service', dest: '/etc/systemd/system/' }
+
+- name: Copy env file
+  template:
+    src: esg-backend.env.j2
+    dest: /etc/esg-backend.env
+    mode: '0600'
+
+- name: Enable and start services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  loop:
+    - esg-backend.service
+    - esg-frontend.service

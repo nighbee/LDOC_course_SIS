@@ -1,0 +1,38 @@
+- name: Install Docker
+  apt:
+    name:
+      - docker.io
+      - docker-compose-plugin
+    state: present
+
+- name: Add user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: Install PostgreSQL client
+  apt:
+    name: postgresql-client
+    state: present
+
+- name: Install Node.js 18
+  shell: |
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt install -y nodejs
+  args:
+    creates: /usr/bin/node
+
+- name: Install Go
+  unarchive:
+    src: https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
+    dest: /usr/local
+    remote_src: yes
+    creates: /usr/local/go/bin/go
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present

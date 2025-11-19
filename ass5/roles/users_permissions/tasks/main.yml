@@ -1,0 +1,62 @@
+- name: Create required groups
+  group:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - esg_admins
+    - esg_managers
+    - esg_students
+    - esg_auditors
+    - esg_automation
+    - postgres
+    - docker_group
+
+- name: Create application users
+  user:
+    name: "{{ item.name }}"
+    group: "{{ item.group }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: yes
+    state: present
+  loop:
+    - { name: admin1,       group: esg_admins }
+    - { name: manager1,     group: esg_managers }
+    - { name: student1,     group: esg_students }
+    - { name: auditor1,     group: esg_auditors }
+    - { name: esg_bot,      group: esg_automation }
+    - { name: postgres_user, group: postgres, shell: '/bin/false' }
+
+- name: Setup passwordless sudo for automation
+  copy:
+    content: |
+      %esg_admins ALL=(ALL) ALL
+      %esg_automation ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/systemctl restart esg-*, /usr/bin/find /var/log/esgapp -delete, /bin/mkdir -p /var/log/esgapp
+    dest: /etc/sudoers.d/esg-privileges
+    mode: '0440'
+    validate: visudo -cf %s
+- name: Ensure .ssh directory exists for esg_bot
+  file:
+    path: /home/esg_bot/.ssh
+    state: directory
+    owner: esg_bot
+    group: esg_automation
+    mode: '0700'
+
+- name: Generate SSH key pair for esg_bot
+  openssh_keypair:
+    path: /home/esg_bot/.ssh/id_rsa
+    type: rsa
+    size: 2048
+    owner: esg_bot
+    group: esg_automation
+
+- name: Fetch the public key content
+  slurp:
+    src: /home/esg_bot/.ssh/id_rsa.pub
+  register: esg_bot_pubkey
+
+- name: Add public key to authorized_keys
+  authorized_key:
+    user: esg_bot
+    state: present
+    key: "{{ esg_bot_pubkey.content | b64decode }}"

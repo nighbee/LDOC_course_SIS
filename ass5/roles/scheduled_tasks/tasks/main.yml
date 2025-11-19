@@ -1,0 +1,30 @@
+- name: Create backup and log directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /backups
+    - /var/log/esgapp
+
+- name: Deploy backup script
+  copy:
+    src: backup_db.sh
+    dest: /usr/local/bin/backup_db.sh
+    mode: '0755'
+
+- name: Deploy log cleanup script
+  copy:
+    src: cleanlogs.sh
+    dest: /usr/local/bin/cleanlogs.sh
+    mode: '0755'
+
+- name: Add cron jobs
+  cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    job: "{{ item.job }}"
+  loop:
+    - { name: "ESG DB Backup", minute: "0", hour: "2", job: "/usr/local/bin/backup_db.sh" }
+    - { name: "ESG Log Cleanup", minute: "0", hour: "*", job: "/usr/local/bin/cleanlogs.sh" }
