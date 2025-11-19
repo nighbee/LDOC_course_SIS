@@ -1,0 +1,16 @@
+[Unit]
+Description=ESG Frontend Container
+After=docker.service esg-backend.service
+Requires=docker.service esg-backend.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop esg-frontend
+ExecStartPre=-/usr/bin/docker rm esg-frontend
+ExecStartPre=/usr/bin/docker pull ztktsn/esg-frontend:latest
+ExecStart=/usr/bin/docker run --name esg-frontend -p 3000:80 ztktsn/esg-frontend:latest
+ExecStop=/usr/bin/docker stop esg-frontend
+
+[Install]
+WantedBy=multi-user.target

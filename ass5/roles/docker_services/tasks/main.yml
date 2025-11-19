@@ -8,8 +8,8 @@
     name: "{{ item }}"
     source: pull
   loop:
-    - "{{ docker_hub_user }}/esg-backend:v1.0"
-    - "{{ docker_hub_user }}/esg-frontend:v1.0"
+    - "{{ docker_hub_user }}/esg-backend:latest"
+    - "{{ docker_hub_user }}/esg-frontend:latest"
 
 - name: Copy systemd units
   copy:

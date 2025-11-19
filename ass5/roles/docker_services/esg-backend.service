@@ -1,0 +1,16 @@
+[Unit]
+Description=ESG Backend Container
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/docker stop esg-backend
+ExecStartPre=-/usr/bin/docker rm esg-backend
+ExecStartPre=/usr/bin/docker pull ztktsn/esg-backend:latest
+ExecStart=/usr/bin/docker run --name esg-backend -p 8080:8080 --env-file /etc/esg-backend.env ztktsn/esg-backend:latest
+ExecStop=/usr/bin/docker stop esg-backend
+
+[Install]
+WantedBy=multi-user.target
