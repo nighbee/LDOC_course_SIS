@@ -1,0 +1,39 @@
+- name: Ensure persistent journal storage
+  file:
+    path: /var/log/journal
+    state: directory
+    mode: '0755'
+    owner: root
+    group: systemd-journal
+
+- name: Configure journald for persistence and limits
+  copy:
+    content: |
+      [Journal]
+      Storage=persistent
+      SystemMaxUse=1G
+      SystemKeepFree=2G
+      RuntimeMaxUse=512M
+      ForwardToSyslog=no
+    dest: /etc/systemd/journald.conf
+  notify: restart journald
+
+- name: Configure Docker to log to journald
+  copy:
+    content: |
+      {
+        "log-driver": "journald"
+      }
+    dest: /etc/docker/daemon.json
+  notify: restart docker
+
+- name: Ensure our services log to journal
+  lineinfile:
+    path: /etc/systemd/system/{{ item }}.service
+    regexp: '^StandardOutput='
+    line: 'StandardOutput=journal'
+    create: yes
+  loop:
+    - esg-backend
+    - esg-frontend
+  notify: reload systemd

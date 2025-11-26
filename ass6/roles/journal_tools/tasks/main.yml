@@ -1,0 +1,12 @@
+---
+- name: Deploy journal search tool
+  copy:
+    src: search_journal.sh
+    dest: /usr/local/bin/search_journal.sh
+    mode: '0755'
+
+- name: Deploy service filter tool
+  copy:
+    src: filter_services.sh
+    dest: /usr/local/bin/filter_services.sh
+    mode: '0755'

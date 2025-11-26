@@ -1,0 +1,20 @@
+- name: Install auditd
+  apt:
+    name: auditd
+    state: present
+
+- name: Enable auditd service
+  service:
+    name: auditd
+    enabled: yes
+    state: started
+
+- name: Configure audit rules
+  copy:
+    content: |
+      -w /etc/passwd -p wa -k identity
+      -w /etc/group -p wa -k identity
+      -w /etc/shadow -p wa -k identity
+      -w /etc/sudoers -p wa -k actions
+    dest: /etc/audit/rules.d/audit.rules
+  notify: restart auditd
