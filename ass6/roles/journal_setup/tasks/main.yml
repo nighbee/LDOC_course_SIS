@@ -6,7 +6,7 @@
     owner: root
     group: systemd-journal
 
-- name: Configure journald for persistence and limits
+- name: journald for persistence and limits
   copy:
     content: |
       [Journal]
@@ -18,7 +18,7 @@
     dest: /etc/systemd/journald.conf
   notify: restart journald
 
-- name: Configure Docker to log to journald
+- name: Docker to log to journald
   copy:
     content: |
       {
