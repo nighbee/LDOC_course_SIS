@@ -1,0 +1,29 @@
+name: Deploy SIS5 Ansible to VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.VM_SSH_KEY }}
+          known_hosts: unnecessary
+
+      - name: Add VM to known hosts
+        run: ssh-keyscan -H 95.161.185.33 >> ~/.ssh/known_hosts
+
+      - name: Run Ansible on VM
+        run: |
+          ssh -o StrictHostKeyChecking=no almaz@95.161.185.33 << 'EOSSH'
+            cd ~/ldoc/ass5
+            git pull origin main
+            ansible-playbook -i inventory.ini site.yml
+          EOSSH
