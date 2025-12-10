@@ -1,29 +1,40 @@
-name: Deploy SIS5 Ansible to VM
+name: Run Ansible on VM
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # 1. Get your code from the repo
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.VM_SSH_KEY }}
-          known_hosts: unnecessary
+      # 2. Install Ansible
+      - name: Install Ansible
+        run: pip install ansible
 
-      - name: Add VM to known hosts
-        run: ssh-keyscan -H 95.161.185.33 >> ~/.ssh/known_hosts
-
-      - name: Run Ansible on VM
+      # 3. Configure the SSH Key from Secrets
+      - name: Setup SSH Key
         run: |
-          ssh -o StrictHostKeyChecking=no almaz@95.161.185.33 << 'EOSSH'
-            cd ~/ldoc/ass5
-            git pull origin main
-            ansible-playbook -i inventory.ini site.yml
-          EOSSH
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Add VM to known_hosts to prevent connection prompt errors
+          ssh-keyscan -H ${{ secrets.VM_IP }} >> ~/.ssh/known_hosts
+
+      # 4. Create the inventory.ini file automatically
+      # We create this file on the fly using the IP and User from your Secrets
+      - name: Create Inventory File
+        run: |
+          echo "[webservers]" > inventory.ini
+          echo "${{ secrets.VM_IP }} ansible_user=${{ secrets.SSH_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+
+      # 5. Run the Playbook
+      # We point to the inventory.ini we just created
+      # We point to ass5/site.yml because that is where your file is in the repo
+      - name: Run Playbook
+        run: |
+          ansible-playbook -i inventory.ini ass5/site.yml
